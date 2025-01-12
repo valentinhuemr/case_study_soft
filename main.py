@@ -78,14 +78,20 @@ if tabs == "Nutzerverwaltung":
         else:
             st.error("Bitte sowohl eine E-Mail-Adresse als auch einen Namen angeben.")
 
-    # Alle Nutzer anzeigen
-    st.subheader("Alle Nutzer anzeigen")
-    all_users = User.find_all()
-    if all_users:
-        for user in all_users:
-            st.write(user)
-    else:
-        st.info("Keine Nutzer gefunden.")
+   # Alle Nutzer anzeigen
+st.subheader("Alle Nutzer anzeigen")
+all_users = User.find_all()
+
+if all_users:
+    # Nutzer in ein Dropdown-Menü einfügen
+    selected_user = st.selectbox(
+        "Wähle einen Nutzer aus", 
+        options=[f"{user.name} ({user.id})" for user in all_users]
+    )
+    st.write(f"Ausgewählter Nutzer: {selected_user}")
+else:
+    st.info("Keine Nutzer gefunden.")
+
 
     # Nutzer löschen
     st.subheader("Nutzer löschen")
