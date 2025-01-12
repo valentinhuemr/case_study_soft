@@ -78,20 +78,19 @@ if tabs == "Nutzerverwaltung":
         else:
             st.error("Bitte sowohl eine E-Mail-Adresse als auch einen Namen angeben.")
 
-   # Alle Nutzer anzeigen
-st.subheader("Alle Nutzer anzeigen")
-all_users = User.find_all()
+    # Alle Nutzer anzeigen
+    st.subheader("Alle Nutzer anzeigen")
+    all_users = User.find_all()
 
-if all_users:
-    # Nutzer in ein Dropdown-Menü einfügen
-    selected_user = st.selectbox(
-        "Wähle einen Nutzer aus", 
-        options=[f"{user.name} ({user.id})" for user in all_users]
-    )
-    st.write(f"Ausgewählter Nutzer: {selected_user}")
-else:
-    st.info("Keine Nutzer gefunden.")
-
+    if all_users:
+        # Nutzer in ein Dropdown-Menü einfügen
+        selected_user = st.selectbox(
+            "Wähle einen Nutzer aus", 
+            options=[f"{user.name} ({user.id})" for user in all_users]
+        )
+        st.write(f"Ausgewählter Nutzer: {selected_user}")
+    else:
+        st.info("Keine Nutzer gefunden.")
 
     # Nutzer löschen
     st.subheader("Nutzer löschen")
@@ -103,3 +102,38 @@ else:
             st.success(f"Nutzer '{user.name}' wurde erfolgreich gelöscht.")
         else:
             st.error(f"Kein Nutzer mit der E-Mail-Adresse '{delete_user_email}' gefunden.")
+
+# Reservierungssystem
+elif tabs == "Reservierungssystem":
+    st.header("Reservierungssystem")
+    st.subheader("Reservierungen anzeigen")
+    reservations = [
+        {"Gerät": "Laser-Cutter", "Datum": "2025-01-10", "Nutzer": "Max Mustermann"},
+        {"Gerät": "3D-Drucker", "Datum": "2025-01-11", "Nutzer": "Anna Müller"}
+    ]
+    for res in reservations:
+        st.write(f"Gerät: {res['Gerät']}, Datum: {res['Datum']}, Nutzer: {res['Nutzer']}")
+
+    st.subheader("Reservierung eintragen")
+    selected_device = st.selectbox("Gerät auswählen", ["Laser-Cutter", "3D-Drucker", "Fräsmaschine"])
+    reservation_date = st.date_input("Datum auswählen")
+    reservation_user = st.text_input("Nutzername eingeben")
+    if st.button("Reservierung speichern"):
+        st.write(f"Reservierung für '{selected_device}' am '{reservation_date}' für Nutzer '{reservation_user}' wurde gespeichert.")
+
+# Wartungs-Management
+elif tabs == "Wartungs-Management":
+    st.header("Wartungs-Management")
+    st.subheader("Wartungen anzeigen")
+    maintenances = [
+        {"Gerät": "Laser-Cutter", "Datum": "2025-01-05", "Kosten": "100 EUR"},
+        {"Gerät": "3D-Drucker", "Datum": "2025-01-08", "Kosten": "150 EUR"}
+    ]
+    for main in maintenances:
+        st.write(f"Gerät: {main['Gerät']}, Datum: {main['Datum']}, Kosten: {main['Kosten']}")
+
+    st.subheader("Wartungskosten anzeigen")
+    selected_device = st.selectbox("Gerät auswählen", ["Laser-Cutter", "3D-Drucker", "Fräsmaschine"], key="maintenance")
+    maintenance_cost = st.number_input("Wartungskosten eingeben (EUR)", min_value=0)
+    if st.button("Kosten speichern"):
+        st.write(f"Wartungskosten für '{selected_device}' wurden auf {maintenance_cost} EUR gesetzt.")
