@@ -1,5 +1,6 @@
 import streamlit as st
 from devices import Device
+from users import User
 from serializer import serializer
 
 # Hauptüberschrift
@@ -59,3 +60,40 @@ if tabs == "Geräteverwaltung":
                 st.error("Bitte einen neuen Namen eingeben.")
     else:
         st.warning("Es sind keine Geräte vorhanden.")
+
+# Nutzer-Verwaltung
+if tabs == "Nutzerverwaltung":
+    st.header("Nutzerverwaltung")
+
+    # Nutzer anlegen
+    st.subheader("Nutzer anlegen")
+    user_email = st.text_input("E-Mail-Adresse des Nutzers eingeben", key="add_user_email")
+    user_name = st.text_input("Name des Nutzers eingeben", key="add_user_name")
+    if st.button("Nutzer speichern"):
+        if user_email and user_name:
+            # Neuen Nutzer erstellen und speichern
+            user = User(user_email, user_name)
+            user.store_data()
+            st.success(f"Nutzer '{user_name}' ({user_email}) wurde erfolgreich gespeichert.")
+        else:
+            st.error("Bitte sowohl eine E-Mail-Adresse als auch einen Namen angeben.")
+
+    # Alle Nutzer anzeigen
+    st.subheader("Alle Nutzer anzeigen")
+    all_users = User.find_all()
+    if all_users:
+        for user in all_users:
+            st.write(user)
+    else:
+        st.info("Keine Nutzer gefunden.")
+
+    # Nutzer löschen
+    st.subheader("Nutzer löschen")
+    delete_user_email = st.text_input("E-Mail-Adresse des zu löschenden Nutzers", key="delete_user_email")
+    if st.button("Nutzer löschen"):
+        user = User.find_by_attribute("id", delete_user_email)
+        if user:
+            user.delete()
+            st.success(f"Nutzer '{user.name}' wurde erfolgreich gelöscht.")
+        else:
+            st.error(f"Kein Nutzer mit der E-Mail-Adresse '{delete_user_email}' gefunden.")
