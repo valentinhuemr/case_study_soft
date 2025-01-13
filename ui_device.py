@@ -1,45 +1,45 @@
-import streamlit as st
-from queries import find_devices
-from devices import Device
+class Device:
+    db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('devices')
 
-# Eine Überschrift der ersten Ebene
-st.write("# Gerätemanagement")
+    def __init__(self, device_name: str, managed_by_user_id: str, **kwargs):
+        self.id = kwargs.get('id')  # ID wird entweder aus der Datenbank oder beim Instanziieren gesetzt
+        if not self.id:  # Falls keine ID vorhanden, automatisch generieren
+            self.id = len(self.db_connector) + 1
+        self.device_name = device_name
+        self.managed_by_user_id = managed_by_user_id
+        self.is_active = kwargs.get('is_active', True)
+        self.end_of_life = kwargs.get('end_of_life', None)
+        self.first_maintenance = kwargs.get('first_maintenance', None)
+        self.next_maintenance = kwargs.get('next_maintenance', None)
+        self.__maintenance_interval = kwargs.get('maintenance_interval', None)
+        self.__maintenance_cost = kwargs.get('maintenance_cost', 0.0)
+        self.__last_update = kwargs.get('last_update', datetime.now().isoformat())
+        self.__creation_date = kwargs.get('creation_date', datetime.now().isoformat())
 
-# Eine Überschrift der zweiten Ebene
-st.write("## Geräteauswahl")
-
-# Eine Auswahlbox mit Datenbankabfrage, das Ergebnis wird in current_device gespeichert
-devices_in_db = find_devices()
-
-if devices_in_db:
-    current_device_name = st.selectbox(
-        'Gerät auswählen',
-        options=devices_in_db, key="sbDevice")
-
-    if current_device_name in devices_in_db:
-        loaded_device = Device.find_by_attribute("device_name", current_device_name)
-        if loaded_device:
-            st.write(f"Loaded Device: {loaded_device}")
+    def store_data(self):
+        DeviceQuery = Query()
+        result = self.db_connector.search(DeviceQuery.device_name == self.device_name)
+        data = {
+            "id": self.id,
+            "device_name": self.device_name,
+            "managed_by_user_id": self.managed_by_user_id,
+            "is_active": self.is_active,
+            "end_of_life": self.end_of_life,
+            "first_maintenance": self.first_maintenance,
+            "next_maintenance": self.next_maintenance,
+            "maintenance_interval": self.__maintenance_interval,
+            "maintenance_cost": self.__maintenance_cost,
+            "last_update": datetime.now().isoformat(),
+            "creation_date": self.__creation_date
+        }
+        if result:
+            self.db_connector.update(data, DeviceQuery.device_name == self.device_name)
         else:
-            st.error("Device not found in the database.")
+            self.db_connector.insert(data)
 
-        with st.form("Device"):
-            st.write(loaded_device.device_name)
-
-            text_input_val = st.text_input("Geräte-Verantwortlicher", value=loaded_device.managed_by_user_id)
-            loaded_device.set_managed_by_user_id(text_input_val)
-
-            # Every form must have a submit button.
-            submitted = st.form_submit_button("Submit")
-            if submitted:
-                loaded_device.store_data()
-                st.write("Data stored.")
-                st.rerun()
-    else:
-        st.error("Selected device is not in the database.")
-else:
-    st.write("No devices found.")
-    st.stop()
-
-st.write("Session State:")
-st.session_state
+    @classmethod
+    def find_all(cls):
+        devices = []
+        for device in cls.db_connector.all():
+            devices.append(cls(**device))
+        return devices
