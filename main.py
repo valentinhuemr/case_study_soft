@@ -25,42 +25,60 @@ if tabs == "Geräteverwaltung":
     # Geräte anlegen
     st.subheader("Gerät anlegen")
     device_name = st.text_input("Gerätename eingeben", key="add_device")
-    managed_by = st.text_input("Verantwortlicher Nutzer (E-Mail)", key="add_user")
+
+    # Lade alle vorhandenen Nutzer aus der Datenbank
+    all_users = User.find_all()
+    user_options = {user.name: user.id for user in all_users}  # Mapping: Nutzername -> Nutzer-ID
+
+    if user_options:
+        managed_by = st.selectbox("Verantwortlicher Nutzer auswählen", options=list(user_options.keys()), key="add_user")
+    else:
+        st.warning("Es sind keine Nutzer in der Nutzerverwaltung vorhanden. Bitte legen Sie erst Nutzer an.")
+        managed_by = None
+
     if st.button("Gerät speichern"):
         if device_name and managed_by:
             # Neues Gerät erstellen und speichern
-            device = Device(device_name, managed_by)
+            user_id = user_options[managed_by]
+            device = Device(device_name, user_id)
             device.store_data()
-            st.success(f"Gerät '{device_name}' wurde gespeichert.")
+            st.success(f"Gerät '{device_name}' wurde gespeichert und '{managed_by}' ist der Verantwortliche.")
             
             # Gerät zur Liste im session_state hinzufügen
             st.session_state.devices.append(device_name)
         else:
-            st.error("Bitte sowohl einen Gerätenamen als auch einen Nutzer angeben.")
+            st.error("Bitte sowohl einen Gerätenamen als auch einen Nutzer auswählen.")
 
     # Gerät umbenennen
     st.subheader("Gerät ändern")
     if st.session_state.devices:
         selected_device = st.selectbox("Gerät auswählen", st.session_state.devices, key="edit_device")
         new_name = st.text_input("Neuen Namen eingeben", value=selected_device, key="new_device_name")
+        
         if st.button("Änderungen speichern"):
             if new_name:
-                # Gerät aus der Datenbank laden und Namen ändern
+                # Lade das alte Gerät aus der Datenbank
                 device = Device.find_by_attribute("device_name", selected_device)
                 if device:
-                    device.device_name = new_name  # Namen ändern
-                    device.store_data()  # Änderungen speichern
+                    # Altes Gerät löschen
+                    device.delete()
+    
+                    # Neues Gerät mit geändertem Namen erstellen
+                    new_device = Device(new_name, device.managed_by_user_id)
+                    new_device.store_data()
                     st.success(f"Gerät '{selected_device}' wurde in '{new_name}' umbenannt.")
                     
-                    # Gerät im session_state aktualisieren
+                    # Aktualisiere die Dropdown-Liste
                     st.session_state.devices = [d if d != selected_device else new_name for d in st.session_state.devices]
                 else:
                     st.error(f"Gerät '{selected_device}' konnte nicht gefunden werden.")
             else:
                 st.error("Bitte einen neuen Namen eingeben.")
+                
+        st.info("Tipp: Seite neu laden, um Änderungen zu sehen!")
     else:
         st.warning("Es sind keine Geräte vorhanden.")
-
+    
 # Nutzer-Verwaltung
 if tabs == "Nutzerverwaltung":
     st.header("Nutzerverwaltung")
