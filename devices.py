@@ -1,3 +1,10 @@
+from tinydb import TinyDB, Query
+import os
+from serializer import serializer
+from datetime import datetime
+
+
+
 class Device:
     db_connector = TinyDB(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.json'), storage=serializer).table('devices')
 
