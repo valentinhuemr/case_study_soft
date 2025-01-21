@@ -76,8 +76,8 @@ if tabs == "Geräteverwaltung":
             st.success(f"Gerät '{selected_device_obj.device_name}' wurde erfolgreich gelöscht.")
             # Seite neu laden, um die Änderungen anzuzeigen
             st.experimental_rerun()
-else:
-    st.info("Keine Geräte vorhanden.")
+    else:
+        st.info("Keine Geräte vorhanden.")
 
 
 
