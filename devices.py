@@ -50,3 +50,7 @@ class Device:
         for device in cls.db_connector.all():
             devices.append(cls(**device))
         return devices
+    def delete(self):
+            """Löscht das aktuelle Gerät aus der Datenbank."""
+            DeviceQuery = Query()
+            self.db_connector.remove(DeviceQuery.device_name == self.device_name)
