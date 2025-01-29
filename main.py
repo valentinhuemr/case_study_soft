@@ -73,10 +73,11 @@ if tabs == "Geräteverwaltung":
 
         # Lösch-Button hinzufügen
         if st.button("Gerät löschen"):
-            selected_device_obj.delete()
-            st.success(f"Gerät '{selected_device_obj.device_name}' wurde erfolgreich gelöscht.")
-            # Seite neu laden, um die Änderungen anzuzeigen
-            st.experimental_rerun()
+             selected_device_obj.delete()
+             st.success(f"Gerät '{selected_device_obj.device_name}' wurde erfolgreich gelöscht.")
+             
+             st.session_state["rerun"] = True  
+             st.query_params = {}  
     else:
         st.info("Keine Geräte vorhanden.")
 
@@ -112,19 +113,25 @@ if tabs == "Nutzerverwaltung":
         st.write(f"Ausgewählter Nutzer: {selected_user}")
 
         # Lösch-Button für den ausgewählten Nutzer
-        if st.button("Ausgewählten Nutzer löschen"):
-            user_id = selected_user.split("(")[-1][:-1]  # Extrahiere die ID (E-Mail-Adresse)
-            user_to_delete = User.find_by_attribute("id", user_id)
-            if user_to_delete:
-                user_to_delete.delete()
-                st.success(f"Nutzer '{user_to_delete.name}' wurde erfolgreich gelöscht.")
-                st.experimental_rerun()
-            else:
-                st.error("Der ausgewählte Nutzer konnte nicht gefunden werden.")
+if st.button("Ausgewählten Nutzer löschen"):
+    user_id = selected_user.split("(")[-1][:-1]  
+    user_to_delete = User.find_by_attribute("id", user_id)
+    if user_to_delete:
+        user_to_delete.delete()
+        st.success(f"Nutzer '{user_to_delete.name}' wurde erfolgreich gelöscht.")
+        
+        st.session_state["rerun"] = True
+        st.query_params = {}  
     else:
+<<<<<<< HEAD
         st.info("Keine Nutzer gefunden.")
         
 if tabs == "Reservierungssystem":
+=======
+        st.error("Der ausgewählte Nutzer konnte nicht gefunden werden.")
+# Reservierungssystem
+elif tabs == "Reservierungssystem":
+>>>>>>> 739d89ce6c5ec20e053d9aaf5a36c5a67dbbeb50
     st.header("Reservierungssystem")
 
     # Vorhandene Reservierungen anzeigen

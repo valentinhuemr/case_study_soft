@@ -50,8 +50,14 @@ class Device:
         for device in cls.db_connector.all():
             devices.append(cls(**device))
         return devices
-    
     def delete(self):
-        """Löscht das aktuelle Gerät aus der Datenbank."""
-        DeviceQuery = Query()
-        self.db_connector.remove(DeviceQuery.device_name == self.device_name)
+            """Löscht das aktuelle Gerät aus der Datenbank."""
+            DeviceQuery = Query()
+            self.db_connector.remove(DeviceQuery.device_name == self.device_name)
+
+    def calculate_next_maintenance(self):
+         if self.first_maintenance and self.__maintenance_interval:
+             self.next_maintenance = (
+                 datetime.fromisoformat(self.first_maintenance) + 
+                 timedelta(days=self.__maintenance_interval)
+             ).isoformat()            
