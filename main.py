@@ -130,31 +130,52 @@ if tabs == "Reservierungssystem":
     # Vorhandene Reservierungen anzeigen
     st.subheader("Bestehende Reservierungen")
     all_reservations = Reservation.find_all()
+    
     if all_reservations:
+        all_devices = Device.find_all()  # Liste aller Geräte
+        all_users = User.find_all()  # Liste aller Nutzer
+
         for res in all_reservations:
-            device = Device.find_by_id(res.device_id)
-            user = User.find_by_id(res.user_id)
-            st.write(f"**Gerät:** {device.device_name} | **Datum:** {res.date} | **Nutzer:** {user.name}")
+            # Finde den Gerätenamen anhand der ID
+            device_name = next((d.device_name for d in all_devices if d.id == res.device_id), "Unbekanntes Gerät")
+            # Finde den Nutzernamen anhand der ID
+            user_name = next((u.name for u in all_users if u.id == res.user_id), "Unbekannter Nutzer")
+
+            st.write(f"**Gerät:** {device_name} | **Datum:** {res.date} | **Nutzer:** {user_name}")
     else:
         st.info("Keine Reservierungen vorhanden.")
 
     # Neue Reservierung anlegen
     st.subheader("Neue Reservierung erstellen")
-    selected_device = st.selectbox("Gerät auswählen", [f"{d.device_name} (ID: {d.id})" for d in Device.find_all()])
-    reservation_date = st.date_input("Datum auswählen")
-    selected_user = st.selectbox("Nutzer auswählen", [f"{u.name} (ID: {u.id})" for u in User.find_all()])
+    devices = Device.find_all()
+    users = User.find_all()
 
-    if st.button("Reservierung speichern"):
-        device_id = int(selected_device.split("(ID: ")[-1][:-1])
-        user_id = selected_user.split("(ID: ")[-1][:-1]
-        reservation = Reservation(device_id, user_id, reservation_date.isoformat())
+    if devices and users:
+        selected_device = st.selectbox("Gerät auswählen", [f"{d.device_name} (ID: {d.id})" for d in devices])
+        reservation_date = st.date_input("Datum auswählen")
+        selected_user = st.selectbox("Nutzer auswählen", [f"{u.name} (ID: {u.id})" for u in users])
 
-        if reservation.store_data():
-            st.success("Reservierung wurde erfolgreich gespeichert.")
-            st.experimental_rerun()
-        else:
-            st.error("Reservierung für dieses Gerät an diesem Datum existiert bereits.")
+        if st.button("Reservierung speichern"):
+            device_id = int(selected_device.split("(ID: ")[-1].strip(")"))  
+            user_id = selected_user.split("(ID: ")[-1].strip(")")
+            reservation = Reservation(device_id, user_id, reservation_date.isoformat())
 
+            if reservation.store_data():
+                st.success("Reservierung wurde erfolgreich gespeichert.")
+
+                # Manuelles Neuladen durch Neuzeichnung der UI
+                st.subheader("Aktualisierte Reservierungen")
+                all_reservations = Reservation.find_all()
+
+                for res in all_reservations:
+                    device_name = next((d.device_name for d in devices if d.id == res.device_id), "Unbekanntes Gerät")
+                    user_name = next((u.name for u in users if u.id == res.user_id), "Unbekannter Nutzer")
+                    st.write(f"**Gerät:** {device_name} | **Datum:** {res.date} | **Nutzer:** {user_name}")
+
+            else:
+                st.error("Reservierung für dieses Gerät an diesem Datum existiert bereits.")
+    else:
+        st.warning("Es müssen mindestens ein Gerät und ein Nutzer existieren, um eine Reservierung zu erstellen.")
 # Wartungs-Management
 elif tabs == "Wartungs-Management":
     st.header("Wartungs-Management")
