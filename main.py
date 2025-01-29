@@ -2,6 +2,7 @@ import streamlit as st
 from devices import Device
 from users import User
 from serializer import serializer
+from reservations import Reservation
 
 # Hauptüberschrift
 st.title("Geräteverwaltungssoftware für Hochschulen")
@@ -122,23 +123,37 @@ if tabs == "Nutzerverwaltung":
                 st.error("Der ausgewählte Nutzer konnte nicht gefunden werden.")
     else:
         st.info("Keine Nutzer gefunden.")
-# Reservierungssystem
-elif tabs == "Reservierungssystem":
+        
+if tabs == "Reservierungssystem":
     st.header("Reservierungssystem")
-    st.subheader("Reservierungen anzeigen")
-    reservations = [
-        {"Gerät": "Laser-Cutter", "Datum": "2025-01-10", "Nutzer": "Max Mustermann"},
-        {"Gerät": "3D-Drucker", "Datum": "2025-01-11", "Nutzer": "Anna Müller"}
-    ]
-    for res in reservations:
-        st.write(f"Gerät: {res['Gerät']}, Datum: {res['Datum']}, Nutzer: {res['Nutzer']}")
 
-    st.subheader("Reservierung eintragen")
-    selected_device = st.selectbox("Gerät auswählen", ["Laser-Cutter", "3D-Drucker", "Fräsmaschine"])
+    # Vorhandene Reservierungen anzeigen
+    st.subheader("Bestehende Reservierungen")
+    all_reservations = Reservation.find_all()
+    if all_reservations:
+        for res in all_reservations:
+            device = Device.find_by_id(res.device_id)
+            user = User.find_by_id(res.user_id)
+            st.write(f"**Gerät:** {device.device_name} | **Datum:** {res.date} | **Nutzer:** {user.name}")
+    else:
+        st.info("Keine Reservierungen vorhanden.")
+
+    # Neue Reservierung anlegen
+    st.subheader("Neue Reservierung erstellen")
+    selected_device = st.selectbox("Gerät auswählen", [f"{d.device_name} (ID: {d.id})" for d in Device.find_all()])
     reservation_date = st.date_input("Datum auswählen")
-    reservation_user = st.text_input("Nutzername eingeben")
+    selected_user = st.selectbox("Nutzer auswählen", [f"{u.name} (ID: {u.id})" for u in User.find_all()])
+
     if st.button("Reservierung speichern"):
-        st.write(f"Reservierung für '{selected_device}' am '{reservation_date}' für Nutzer '{reservation_user}' wurde gespeichert.")
+        device_id = int(selected_device.split("(ID: ")[-1][:-1])
+        user_id = selected_user.split("(ID: ")[-1][:-1]
+        reservation = Reservation(device_id, user_id, reservation_date.isoformat())
+
+        if reservation.store_data():
+            st.success("Reservierung wurde erfolgreich gespeichert.")
+            st.experimental_rerun()
+        else:
+            st.error("Reservierung für dieses Gerät an diesem Datum existiert bereits.")
 
 # Wartungs-Management
 elif tabs == "Wartungs-Management":
