@@ -73,11 +73,10 @@ if tabs == "Geräteverwaltung":
 
         # Lösch-Button hinzufügen
         if st.button("Gerät löschen"):
-             selected_device_obj.delete()
-             st.success(f"Gerät '{selected_device_obj.device_name}' wurde erfolgreich gelöscht.")
-             
-             st.session_state["rerun"] = True  
-             st.query_params = {}  
+            selected_device_obj.delete()
+            st.success(f"Gerät '{selected_device_obj.device_name}' wurde erfolgreich gelöscht.")
+            # Seite neu laden, um die Änderungen anzuzeigen
+            st.experimental_rerun()
     else:
         st.info("Keine Geräte vorhanden.")
 
@@ -113,25 +112,19 @@ if tabs == "Nutzerverwaltung":
         st.write(f"Ausgewählter Nutzer: {selected_user}")
 
         # Lösch-Button für den ausgewählten Nutzer
-if st.button("Ausgewählten Nutzer löschen"):
-    user_id = selected_user.split("(")[-1][:-1]  
-    user_to_delete = User.find_by_attribute("id", user_id)
-    if user_to_delete:
-        user_to_delete.delete()
-        st.success(f"Nutzer '{user_to_delete.name}' wurde erfolgreich gelöscht.")
-        
-        st.session_state["rerun"] = True
-        st.query_params = {}  
+        if st.button("Ausgewählten Nutzer löschen"):
+            user_id = selected_user.split("(")[-1][:-1]  # Extrahiere die ID (E-Mail-Adresse)
+            user_to_delete = User.find_by_attribute("id", user_id)
+            if user_to_delete:
+                user_to_delete.delete()
+                st.success(f"Nutzer '{user_to_delete.name}' wurde erfolgreich gelöscht.")
+                st.experimental_rerun()
+            else:
+                st.error("Der ausgewählte Nutzer konnte nicht gefunden werden.")
     else:
-<<<<<<< HEAD
         st.info("Keine Nutzer gefunden.")
-        
-if tabs == "Reservierungssystem":
-=======
-        st.error("Der ausgewählte Nutzer konnte nicht gefunden werden.")
 # Reservierungssystem
-elif tabs == "Reservierungssystem":
->>>>>>> 739d89ce6c5ec20e053d9aaf5a36c5a67dbbeb50
+if tabs == "Reservierungssystem":
     st.header("Reservierungssystem")
 
     # Vorhandene Reservierungen anzeigen
@@ -139,15 +132,12 @@ elif tabs == "Reservierungssystem":
     all_reservations = Reservation.find_all()
     
     if all_reservations:
-        all_devices = Device.find_all()  # Liste aller Geräte
-        all_users = User.find_all()  # Liste aller Nutzer
+        devices = {d.id: d.device_name for d in Device.find_all()}  # Geräteliste als Dict
+        users = {u.id: u.name for u in User.find_all()}  # Nutzerliste als Dict
 
         for res in all_reservations:
-            # Finde den Gerätenamen anhand der ID
-            device_name = next((d.device_name for d in all_devices if d.id == res.device_id), "Unbekanntes Gerät")
-            # Finde den Nutzernamen anhand der ID
-            user_name = next((u.name for u in all_users if u.id == res.user_id), "Unbekannter Nutzer")
-
+            device_name = devices.get(res.device_id, "Unbekanntes Gerät")
+            user_name = users.get(res.user_id, "Unbekannter Nutzer")
             st.write(f"**Gerät:** {device_name} | **Datum:** {res.date} | **Nutzer:** {user_name}")
     else:
         st.info("Keine Reservierungen vorhanden.")
@@ -163,26 +153,27 @@ elif tabs == "Reservierungssystem":
         selected_user = st.selectbox("Nutzer auswählen", [f"{u.name} (ID: {u.id})" for u in users])
 
         if st.button("Reservierung speichern"):
-            device_id = int(selected_device.split("(ID: ")[-1].strip(")"))  
-            user_id = selected_user.split("(ID: ")[-1].strip(")")
+            device_id = int(selected_device.split("(ID: ")[-1][:-1])  # ID extrahieren
+            user_id = selected_user.split("(ID: ")[-1][:-1]  # ID extrahieren
             reservation = Reservation(device_id, user_id, reservation_date.isoformat())
 
             if reservation.store_data():
                 st.success("Reservierung wurde erfolgreich gespeichert.")
 
-                # Manuelles Neuladen durch Neuzeichnung der UI
+                # Direkte Aktualisierung der Anzeige
                 st.subheader("Aktualisierte Reservierungen")
-                all_reservations = Reservation.find_all()
+                all_reservations.append(reservation)
 
                 for res in all_reservations:
-                    device_name = next((d.device_name for d in devices if d.id == res.device_id), "Unbekanntes Gerät")
-                    user_name = next((u.name for u in users if u.id == res.user_id), "Unbekannter Nutzer")
+                    device_name = devices.get(res.device_id, "Unbekanntes Gerät")
+                    user_name = users.get(res.user_id, "Unbekannter Nutzer")
                     st.write(f"**Gerät:** {device_name} | **Datum:** {res.date} | **Nutzer:** {user_name}")
 
             else:
                 st.error("Reservierung für dieses Gerät an diesem Datum existiert bereits.")
     else:
         st.warning("Es müssen mindestens ein Gerät und ein Nutzer existieren, um eine Reservierung zu erstellen.")
+
 # Wartungs-Management
 elif tabs == "Wartungs-Management":
     st.header("Wartungs-Management")
