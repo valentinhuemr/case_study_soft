@@ -1,8 +1,11 @@
 import streamlit as st
 from devices import Device
 from users import User
-from serializer import serializer
 from reservations import Reservation
+from maintenance import Maintenance
+
+
+
 
 # Hauptüberschrift
 st.title("Geräteverwaltungssoftware für Hochschulen")
@@ -178,18 +181,43 @@ if tabs == "Reservierungssystem":
         st.warning("Es müssen mindestens ein Gerät und ein Nutzer existieren, um eine Reservierung zu erstellen.")
 
 # Wartungs-Management
-elif tabs == "Wartungs-Management":
+if tabs == "Wartungs-Management":
     st.header("Wartungs-Management")
-    st.subheader("Wartungen anzeigen")
-    maintenances = [
-        {"Gerät": "Laser-Cutter", "Datum": "2025-01-05", "Kosten": "100 EUR"},
-        {"Gerät": "3D-Drucker", "Datum": "2025-01-08", "Kosten": "150 EUR"}
-    ]
-    for main in maintenances:
-        st.write(f"Gerät: {main['Gerät']}, Datum: {main['Datum']}, Kosten: {main['Kosten']}")
-
-    st.subheader("Wartungskosten anzeigen")
-    selected_device = st.selectbox("Gerät auswählen", ["Laser-Cutter", "3D-Drucker", "Fräsmaschine"], key="maintenance")
-    maintenance_cost = st.number_input("Wartungskosten eingeben (EUR)", min_value=0)
-    if st.button("Kosten speichern"):
-        st.write(f"Wartungskosten für '{selected_device}' wurden auf {maintenance_cost} EUR gesetzt.")
+    
+    # Wartungen anzeigen
+    st.subheader("Geplante Wartungen")
+    all_devices = Device.find_all()
+    all_maintenances = Maintenance.find_all()
+    
+    if all_maintenances:
+        for main in all_maintenances:
+            device_name = next((d.device_name for d in all_devices if d.id == main.device_id), "Unbekanntes Gerät")
+            st.write(f"Gerät: {device_name}, Datum: {main.date}, Kosten: {main.cost} EUR")
+    else:
+        st.info("Keine Wartungen geplant.")
+    
+    # Neue Wartung hinzufügen
+    st.subheader("Neue Wartung planen")
+    if all_devices:
+        selected_device = st.selectbox("Gerät auswählen", [f"{d.device_name} (ID: {d.id})" for d in all_devices])
+        maintenance_date = st.date_input("Wartungsdatum auswählen")
+        maintenance_cost = st.number_input("Wartungskosten eingeben (EUR)", min_value=0)
+        
+        if st.button("Wartung speichern"):
+            device_id = int(selected_device.split("(ID: ")[-1].strip(")"))
+            maintenance = Maintenance(device_id, maintenance_date.isoformat(), maintenance_cost)
+            maintenance.store_data()
+            st.success(f"Wartung für '{selected_device}' am {maintenance_date} gespeichert.")
+            st.experimental_rerun()
+    else:
+        st.warning("Keine Geräte vorhanden.")
+    
+    # Einschränkung für Reservierungen während der Wartung
+    st.subheader("Reservierungen verhindern während Wartung")
+    reservations = Reservation.find_all()
+    
+    for res in reservations:
+        maintenance_dates = [m.date for m in all_maintenances if m.device_id == res.device_id]
+        if res.date in maintenance_dates:
+            res.delete()
+            st.warning(f"Reservierung für Gerät {res.device_id} am {res.date} wurde storniert, da eine Wartung geplant ist.")
